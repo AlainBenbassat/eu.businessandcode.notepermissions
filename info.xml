@@ -1,4 +1,4 @@
-<?xml version="v1.0"?>
+<?xml version="1.0"?>
 <extension key="eu.businessandcode.notepermissions" type="module">
   <file>notepermissions</file>
   <name>Note Permissions</name>
@@ -14,7 +14,7 @@
     <url desc="Licensing">https://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
   <releaseDate>2020-04-09</releaseDate>
-  <version>v1.0</version>
+  <version>1.0</version>
   <develStage>stable</develStage>
   <compatibility>
     <ver>5.0</ver>
