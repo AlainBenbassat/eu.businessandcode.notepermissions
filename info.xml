@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="v1.0"?>
 <extension key="eu.businessandcode.notepermissions" type="module">
   <file>notepermissions</file>
   <name>Note Permissions</name>
