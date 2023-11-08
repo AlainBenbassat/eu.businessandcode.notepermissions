@@ -18,6 +18,32 @@ function notepermissions_civicrm_notePrivacy(&$noteValues) {
   }
 }
 
+/**
+ * Implements hook_civicrm_selectWhereClause().
+ */
+function notepermissions_civicrm_selectWhereClause($entityName, &$clauses, $userId) {
+  // Amend note privacy clause (only relevant if user lacks 'view all notes' permission)
+  if ($entityName === 'Note' && !CRM_Core_Permission::check('view all notes', $userId)) {
+    $options = \Civi\Api4\OptionValue::get(FALSE)
+      ->addWhere('option_group_id:name', '=', 'note_privacy')
+      ->addWhere('value', '>', 1)
+      ->execute()
+      ->column('value');
+
+    foreach ($options as $optionValue) {
+      if (CRM_Core_Permission::check("access_privacy_type_$optionValue", $userId)) {
+        // What's going on here is that `$clauses['privacy']` already contains an array of arrays
+        // (which means OR).
+        // @see CRM_Core_BAO_Note::addSelectWhereClause()
+        // The existing values are `"= 0" OR "= 1 AND {contact_id} = $currentUser"`
+        // So here we are adding a 3rd condition IF the above permission check passes, to allow
+        // our privileged users to see our special privacy type 2.
+        $clauses['privacy'][0][] = "= $optionValue";
+      }
+    }
+  }
+}
+
 function notepermissions_civicrm_postProcess($formName, $form) {
   // when a note privacy is added or edited, we clean up the permissions (will trigger our hook: notepermissions_civicrm_permission)
   if ($formName == 'CRM_Admin_Form_Options' && $form->getVar('_gName') == 'note_privacy') {
