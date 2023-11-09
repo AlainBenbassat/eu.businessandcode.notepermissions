@@ -9,7 +9,6 @@ function notepermissions_civicrm_notePrivacy(&$noteValues) {
   if ($noteValues['privacy'] >= 2) {
     // get the corresponding permission key
     list($permissionKey, $permissionName, $permissionDescription) = notepermissions_civicrm_getPermissionNameAndDescription($noteValues['privacy'], '');
-
     // check if the current user is allowed to see the note
     if (CRM_Core_Permission::check($permissionKey)) {
       // OK, unhide the note
@@ -21,7 +20,11 @@ function notepermissions_civicrm_notePrivacy(&$noteValues) {
 /**
  * Implements hook_civicrm_selectWhereClause().
  */
-function notepermissions_civicrm_selectWhereClause($entityName, &$clauses, $userId) {
+function notepermissions_civicrm_selectWhereClause($entityName, &$clauses, $userId = 0, $conditions = []) {
+  if ($userId === 0) {
+    $userId = CRM_Core_Session::getLoggedInContactID();
+  }
+
   // Amend note privacy clause (only relevant if user lacks 'view all notes' permission)
   if ($entityName === 'Note' && !CRM_Core_Permission::check('view all notes', $userId)) {
     $options = \Civi\Api4\OptionValue::get(FALSE)
