@@ -20,7 +20,7 @@ function notepermissions_civicrm_notePrivacy(&$noteValues) {
 /**
  * Implements hook_civicrm_selectWhereClause().
  */
-function notepermissions_civicrm_selectWhereClause($entityName, &$clauses, $userId = 0, $conditions = []) {
+function notepermissions_civicrm_selectWhereClause($entityName, &$clauses, $userId = NULL, $conditions = []) {
   if ($userId === 0) {
     $userId = CRM_Core_Session::getLoggedInContactID();
   }
@@ -28,6 +28,7 @@ function notepermissions_civicrm_selectWhereClause($entityName, &$clauses, $user
   // Amend note privacy clause (only relevant if user lacks 'view all notes' permission)
   if ($entityName === 'Note' && !CRM_Core_Permission::check('view all notes', $userId)) {
     $options = \Civi\Api4\OptionValue::get(FALSE)
+      ->addSelect('value')
       ->addWhere('option_group_id:name', '=', 'note_privacy')
       ->addWhere('value', '>', 1)
       ->execute()
@@ -39,8 +40,8 @@ function notepermissions_civicrm_selectWhereClause($entityName, &$clauses, $user
         // (which means OR).
         // @see CRM_Core_BAO_Note::addSelectWhereClause()
         // The existing values are `"= 0" OR "= 1 AND {contact_id} = $currentUser"`
-        // So here we are adding a 3rd condition IF the above permission check passes, to allow
-        // our privileged users to see our special privacy type 2.
+        // So here we are adding a condition to the OR group IF the above permission check passes,
+        // to allow privileged users to see this privacy type.
         $clauses['privacy'][0][] = "= $optionValue";
       }
     }
