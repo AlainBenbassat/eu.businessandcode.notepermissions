@@ -3,17 +3,33 @@
 require_once 'notepermissions.civix.php';
 use CRM_Notepermissions_ExtensionUtil as E;
 
-function notepermissions_civicrm_notePrivacy(&$noteValues) {
-  // check if the user is allowed to see this note
-  // (we skip this ckeck for privacy 0 (none) and 1 (author only)
-  if ($noteValues['privacy'] >= 2) {
-    // get the corresponding permission key
-    list($permissionKey, $permissionName, $permissionDescription) = notepermissions_civicrm_getPermissionNameAndDescription($noteValues['privacy'], '');
+/**
+ * Implements hook_civicrm_selectWhereClause().
+ */
+function notepermissions_civicrm_selectWhereClause($entityName, &$clauses, $userId = NULL, $conditions = []) {
+  if ($userId === NULL) {
+    $userId = CRM_Core_Session::getLoggedInContactID();
+  }
 
-    // check if the current user is allowed to see the note
-    if (CRM_Core_Permission::check($permissionKey)) {
-      // OK, unhide the note
-      $noteValues['notePrivacy_hidden'] = FALSE;
+  // Amend note privacy clause (only relevant if user lacks 'view all notes' permission)
+  if ($entityName === 'Note' && !CRM_Core_Permission::check('view all notes', $userId)) {
+    $options = \Civi\Api4\OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'note_privacy')
+      ->addWhere('value', '>', 1)
+      ->execute()
+      ->column('value');
+
+    foreach ($options as $optionValue) {
+      if (CRM_Core_Permission::check("access_privacy_type_$optionValue", $userId)) {
+        // What's going on here is that `$clauses['privacy']` already contains an array of arrays
+        // (which means OR).
+        // @see CRM_Core_BAO_Note::addSelectWhereClause()
+        // The existing values are `"= 0" OR "= 1 AND {contact_id} = $currentUser"`
+        // So here we are adding a condition to the OR group IF the above permission check passes,
+        // to allow privileged users to see this privacy type.
+        $clauses['privacy'][0][] = "= $optionValue";
+      }
     }
   }
 }
