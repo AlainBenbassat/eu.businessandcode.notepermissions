@@ -57,15 +57,15 @@ function notepermissions_civicrm_permission(&$permissions) {
     // check if the permission exists
     if (!array_key_exists($permissionName, $permissions)) {
       // permission does not exist, add it
-      $permissions[$permissionKey] = [$permissionName, $permissionDescription];
+      $permissions[$permissionKey] = ['label' => $permissionName, 'description' => $permissionDescription];
     }
   }
 }
 
 function notepermissions_civicrm_getPermissionNameAndDescription($id, $label) {
   $key = "access_privacy_type_$id";
-  $name = ts('CiviCRM: access notes with privacy type ID = ') . ' ' . $id;
-  $description = ts("Access notes with privacy type:") . ' ' . ts($label);
+  $name = E::ts('CiviCRM: access notes with privacy type ID = ') . ' ' . $id;
+  $description = E::ts("Access notes with privacy type:") . ' ' . E::ts($label);
 
   return [$key, $name, $description];
 }
