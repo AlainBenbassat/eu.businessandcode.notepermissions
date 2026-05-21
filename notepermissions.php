@@ -43,21 +43,30 @@ function notepermissions_civicrm_postProcess($formName, $form) {
 }
 
 function notepermissions_civicrm_permission(&$permissions) {
-  // get all options in the option group "note_privacy"
-  $result = civicrm_api3('OptionValue', 'get', [
-    'sequential' => 1,
-    'option_group_id' => "note_privacy",
-  ]);
+  static $cachedPermissions = NULL;
 
-  // skip the first two (i.e. None, Author only)
-  for ($i = 2; $i < $result['count']; $i++) {
-    // get key, name, and description based on the id and label
-    list($permissionKey, $permissionName, $permissionDescription) = notepermissions_civicrm_getPermissionNameAndDescription($result['values'][$i]['value'], $result['values'][$i]['label']);
+  if ($cachedPermissions === NULL) {
+    $cachedPermissions = [];
 
-    // check if the permission exists
-    if (!array_key_exists($permissionName, $permissions)) {
-      // permission does not exist, add it
-      $permissions[$permissionKey] = ['label' => $permissionName, 'description' => $permissionDescription];
+    // Get all privacy options greater than 1 (skip None and Author only).
+    $result = civicrm_api3('OptionValue', 'get', [
+      'sequential' => 1,
+      'option_group_id' => "note_privacy",
+      'value' => ['>' => 1],
+      'options' => ['limit' => 0],
+      'return' => ['value', 'label'],
+    ]);
+
+    foreach ($result['values'] as $option) {
+      list($permissionKey, $permissionName, $permissionDescription) = notepermissions_civicrm_getPermissionNameAndDescription($option['value'], $option['label']);
+      $cachedPermissions[$permissionKey] = ['label' => $permissionName, 'description' => $permissionDescription];
+    }
+  }
+
+  foreach ($cachedPermissions as $permissionKey => $definition) {
+    // Keep pre-existing definitions if another extension already provided them.
+    if (!array_key_exists($permissionKey, $permissions)) {
+      $permissions[$permissionKey] = $definition;
     }
   }
 }
